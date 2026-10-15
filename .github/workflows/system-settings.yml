@@ -1,0 +1,37 @@
+name: system-settings
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  TOOLS_DIR: C:\Users\SREDD131\onedrive - azureford\desktop\pyasam
+
+jobs:
+  check:
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+        working-directory: ${{ env.TOOLS_DIR }}
+    steps:
+      - name: Guard tests
+        run: python -m unittest test_powershell_tool -v
+
+      - name: Collect system settings
+        run: python system_settings_runner.py --json --strict | Out-File -Encoding utf8 "$env:RUNNER_TEMP\system-settings.json"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-settings
+          path: ${{ runner.temp }}\system-settings.json
+          retention-days: 7
